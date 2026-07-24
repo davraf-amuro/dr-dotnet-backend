@@ -1,5 +1,5 @@
 ---
-name: audit-api
+name: dr-audit-api
 description: "Audit completo di qualsiasi backend C# .NET 10 (Minimal API, Windows Service, o soluzione multi-progetto). Rileva tipo progetto, carica istruzioni pertinenti, verifica conformità a pattern, sicurezza, architettura, EF Core, performance e qualità del codice. Non propone fix: produce un report strutturato per severità da usare come base per un plan."
 ---
 
