@@ -6,7 +6,8 @@ Pacchetto base delle linee guida dr-* per i progetti backend .NET 10: Minimal AP
 
 | File | Tipo | A cosa serve |
 |------|------|--------------|
-| `.github/instructions/dotnet-project-type.instructions.md` | Istruzione | Fa rilevare all'agente il tipo di progetto dai segnali nel codice (`Workers/*.cs`, `Endpoints/*.cs`, `package.json`) e indica quale istruzione e quale pacchetto servono; senza segnali riconoscibili l'agente si ferma e chiede. Fissa le convenzioni .NET (primary constructors, `async`/`await` con `CancellationToken`, logging con placeholder, `IValidator<T>`) e il gate di push `dotnet format <percorso>.csproj --verify-no-changes`. |
+| `.github/instructions/dotnet-project-type.instructions.md` | Istruzione | Fa rilevare all'agente il tipo di ogni progetto della solution dai segnali nel codice (`Endpoints/*.cs`, `Workers/*.cs` con `AddWindowsService`, class library referenziata, `package.json`) e indica quale istruzione e quale pacchetto servono. I job in-process di una Minimal API non sono un Windows Service; `DbContext` o EF Core rimandano a `dr-efdb`. Senza segnali riconoscibili l'agente si ferma e chiede. Fissa le convenzioni .NET (primary constructors, `async`/`await` con `CancellationToken`, logging con placeholder, `IValidator<T>`) e il gate di push `dotnet format <percorso>.csproj --verify-no-changes`. |
+| `.github/instructions/producer-consumer-queue.instructions.md` | Istruzione | Rende obbligatorio il pattern produttore/consumatore quando il codice acquisisce elementi da una sorgente e li elabora uno per uno: coda `Channel` bounded con contropressione, pochi produttori e N worker con il proprio scope DI, worker idempotenti, tre casi di errore (elemento, produttore, worker), un limitatore condiviso per le quote, parametri da configurazione. Include un esempio di riferimento, gli anti-pattern e i test minimi. |
 | `.claude/skills/dr-audit-api/SKILL.md` | Skill Claude Code | Skill `/dr-audit-api [focus]`: audit in sola lettura di un backend C# .NET 10, con una fase di orientamento e 7 fasi (sicurezza, EF Core, architettura, dead code, conformità Minimal API o Windows Service, qualità del codice, performance). Produce un report per severità `ERROR` / `WARNING` / `INFO` senza modificare file, poi chiede se attivare il plan mode per le correzioni. |
 | `Directory.Build.props` | File di radice | Impostazioni MSBuild condivise da tutti i progetti della solution: `net10.0`, `LangVersion` `14.0`, `Nullable` e `ImplicitUsings` attivi, `EnforceCodeStyleInBuild`, `AnalysisLevel` `latest`, documentazione XML generata con il warning `1591` silenziato. Configurazione Debug con simboli completi e senza ottimizzazione, Release con `pdbonly` e ottimizzazione. |
 | `global.json` | File di radice | Pinna l'SDK .NET alla versione `10.0.100` con `rollForward: latestMinor`. |
@@ -78,6 +79,7 @@ Nota: la forma breve `irm https://raw.githubusercontent.com/... | iex` è un'alt
 | Percorso nel progetto host | Contenuto |
 |----------------------------|-----------|
 | `.github/instructions/dotnet-project-type.instructions.md` | Rilevamento del tipo di progetto, convenzioni .NET, gate di push |
+| `.github/instructions/producer-consumer-queue.instructions.md` | Pattern produttore/consumatore con coda bounded |
 | `.claude/skills/dr-audit-api/` | Cartella della skill, con `SKILL.md` |
 | `Directory.Build.props` | Impostazioni MSBuild comuni (`rootFiles` del catalogo) |
 | `global.json` | Pin dell'SDK .NET (`rootFiles` del catalogo) |
@@ -116,4 +118,4 @@ Dal progetto host usa `/dr-segnala-miglioria <descrizione>` (su Copilot il promp
 
 ---
 
-*Documento aggiornato: Ottobre 2026 — Revisione v1.2 — 2026-10-11 — claude-opus-5-5*
+*Documento aggiornato: Ottobre 2026 — Revisione v1.3 — 2026-10-11 — claude-opus-5-5*

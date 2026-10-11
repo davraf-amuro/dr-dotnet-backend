@@ -45,6 +45,7 @@ Leggi sempre l'istruzione modulare corretta prima di generare o modificare codic
 - Logging strutturato con placeholder — mai interpolazione di stringa nel log
 - Naming: namespace `snake_case`, classi `PascalCase`, variabili `camelCase`
 - Validazione input: ogni endpoint con body usa `IValidator<T>`; segui `input-validation.instructions.md`
+- Acquisizione da una sorgente ed elaborazione per elemento: separale con una coda FIFO bounded, produttori e N worker; segui `producer-consumer-queue.instructions.md`
 
 ---
 
@@ -85,8 +86,9 @@ Questo comando è il "comando di verifica dichiarato dall'istruzione di dominio"
 - [ ] Tipo rilevato correttamente, istruzione modulare letta
 - [ ] Primary constructors e `async`/`await` usati dove servono
 - [ ] Logging strutturato con placeholder
+- [ ] Acquisizione ed elaborazione per elemento separate da una coda bounded (`producer-consumer-queue.instructions.md`), oppure dichiarato perché non serve
 - [ ] `dotnet format --verify-no-changes` pulito prima della push
 
 ---
 
-*Istruzione v1.1 - Progetto .NET - 2026-10-11 — claude-opus-5-5 — class library, EF Core → dr-efdb, job in-process distinti dal Windows Service (dr-dotnet-backend#1)*
+*Istruzione v1.1 - Progetto .NET - 2026-10-11 — claude-opus-5-5 — class library, EF Core → dr-efdb, job in-process distinti dal Windows Service (dr-dotnet-backend#1); rimando a producer-consumer-queue (dr-dotnet-backend#2)*

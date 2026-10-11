@@ -36,6 +36,7 @@ Se l'input tra i marcatori è vuoto, esegui tutte le fasi. Se contiene un focus 
    - `.github/instructions/sensitive-data.instructions.md`
    - `.github/instructions/logging.instructions.md`
    - `.github/instructions/input-validation.instructions.md`
+   - `.github/instructions/producer-consumer-queue.instructions.md` (stesso pacchetto della skill, per la sezione "Concorrenza" della Fase 3)
 4. Esplora la struttura del progetto (cartelle `src/`, `Program.cs`, file `.csproj`).
 5. **Fallback istruzioni mancanti:** se un file di istruzioni non esiste nel progetto host (setup non eseguito), dichiara `[istruzione mancante: nome-file]` e prosegui usando le regole incorporate in questa skill — non fermarti.
 6. Dichiara prima di procedere: "**Tipo rilevato:** [tipo]. **Istruzioni caricate:** [lista file]. Procedo con l'audit."
@@ -80,6 +81,16 @@ Cerca nei file `.cs`, `appsettings*.json`, `docker-compose*.yml`, `.env*`:
 - **[WARNING]** Due classi con dipendenza circolare — estrarre un terzo concetto
 - **[WARNING]** Pattern proibiti presenti: IRepository, AutoMapper, MediatR (vietati dalle istruzioni del progetto)
 - **[INFO]** Metodo privato con logica riutilizzabile che potrebbe essere estratto in un servizio/helper separato
+
+#### Concorrenza: acquisizione ed elaborazione
+
+Verifica rispetto a `producer-consumer-queue.instructions.md`:
+
+- **[ERROR]** `DbContext` o servizio scoped condiviso tra task paralleli (`Parallel.ForEachAsync`, `Task.WhenAll`, `Task.Run` in un ciclo) — non è thread-safe; ogni task o worker deve aprire il proprio scope con `IServiceScopeFactory.CreateAsyncScope()`
+- **[WARNING]** Ciclo parallelo che mescola acquisizione da una sorgente (API esterna, casella di posta, file, tabella, broker) ed elaborazione per elemento — il parallelismo dell'elaborazione colpisce la sorgente; separare con produttori, coda bounded e N worker
+- **[WARNING]** Coda non bounded tra acquisizione ed elaborazione (`Channel.CreateUnbounded`, `ConcurrentQueue` senza limite) — nessuna contropressione, memoria non limitata
+- **[WARNING]** Worker senza gestione dell'errore sul singolo elemento (un elemento fallito ferma la coda), oppure `catch (Exception)` che ingoia anche gli errori fatali
+- **[INFO]** Numero di worker o capienza della coda scritti nel codice invece che letti dalla configurazione
 
 ---
 
