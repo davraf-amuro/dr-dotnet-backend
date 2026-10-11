@@ -255,4 +255,4 @@ Rispondi esattamente: "Questo non rientra nel mio perimetro operativo."
 
 ---
 
-*Skill v2.1 - Backend Audit generico .NET 10 - 2026-07-02 00:03 — claude-fable-5*
+*Skill v2.2 - Backend Audit generico .NET 10 - 2026-10-11 — claude-opus-5-5 — rilevamento di class library, EF Core e job in-process (dr-dotnet-backend#1); controlli di concorrenza produttore/consumatore (dr-dotnet-backend#2)*
