@@ -24,16 +24,19 @@ Se l'input tra i marcatori è vuoto, esegui tutte le fasi. Se contiene un focus 
 ### Fase 0 — Orientamento (OBBLIGATORIA — non saltare mai)
 
 1. Leggi `.github/copilot-instructions.md` — carica le convenzioni ufficiali del progetto.
-2. Rileva il tipo di progetto esplorando `src/`:
-   - `Workers/*.cs` presenti → **Windows Service** → leggi `.github/instructions/windows-service.instructions.md`
-   - `Endpoints/*.cs` presenti → **Minimal API** → leggi `.github/instructions/minimal-api-architecture.instructions.md`
-   - Entrambi → **soluzione multi-progetto** → leggi entrambe le istruzioni modulari
-   - Nessuno dei due → rileva dal codice e dichiara il tipo trovato; se impossibile, fermati e chiedi all'utente
+2. Rileva il tipo **per ogni progetto** (`.csproj`) in `src/`, con la tabella di `.github/instructions/dotnet-project-type.instructions.md` (sezione "Tipo di progetto"):
+   - `Workers/*.cs` **e** `AddWindowsService`/`UseWindowsService` in `Program.cs` → **Windows Service** → leggi `.github/instructions/windows-service.instructions.md`
+   - `Endpoints/*.cs` presenti → **Minimal API** → leggi `.github/instructions/minimal-api-architecture.instructions.md`. Job in-process (`IHostedService`, `BackgroundService`, Quartz.NET) senza `AddWindowsService` restano Minimal API: non applicare le verifiche "Solo per Windows Service"
+   - Un progetto Windows Service e uno Minimal API nella stessa solution → **soluzione multi-progetto** → leggi entrambe le istruzioni modulari
+   - `.csproj` senza `Program.cs`, `Endpoints/` e `Workers/`, referenziato da un altro progetto → **class library** → nessuna istruzione di architettura propria: verificala con le regole del progetto che la referenzia e con le Fasi 1-4, 6 e 7
+   - Nessun segnale → rileva dal codice e dichiara il tipo trovato; se impossibile, fermati e chiedi all'utente
+   - In aggiunta al tipo: classe che eredita `DbContext` o pacchetto `Microsoft.EntityFrameworkCore.*` → leggi `.github/instructions/database-provider.instructions.md` e `.github/instructions/database-startup-resilience.instructions.md` (pacchetto `dr-efdb`). Se mancano, dichiaralo nel report e consiglia di installare `dr-efdb`
 3. Leggi SEMPRE (indipendentemente dal tipo):
    - `.github/instructions/code-organization.instructions.md`
    - `.github/instructions/sensitive-data.instructions.md`
    - `.github/instructions/logging.instructions.md`
    - `.github/instructions/input-validation.instructions.md`
+   - `.github/instructions/producer-consumer-queue.instructions.md` (stesso pacchetto della skill, per la sezione "Concorrenza" della Fase 3)
 4. Esplora la struttura del progetto (cartelle `src/`, `Program.cs`, file `.csproj`).
 5. **Fallback istruzioni mancanti:** se un file di istruzioni non esiste nel progetto host (setup non eseguito), dichiara `[istruzione mancante: nome-file]` e prosegui usando le regole incorporate in questa skill — non fermarti.
 6. Dichiara prima di procedere: "**Tipo rilevato:** [tipo]. **Istruzioni caricate:** [lista file]. Procedo con l'audit."
@@ -78,6 +81,16 @@ Cerca nei file `.cs`, `appsettings*.json`, `docker-compose*.yml`, `.env*`:
 - **[WARNING]** Due classi con dipendenza circolare — estrarre un terzo concetto
 - **[WARNING]** Pattern proibiti presenti: IRepository, AutoMapper, MediatR (vietati dalle istruzioni del progetto)
 - **[INFO]** Metodo privato con logica riutilizzabile che potrebbe essere estratto in un servizio/helper separato
+
+#### Concorrenza: acquisizione ed elaborazione
+
+Verifica rispetto a `producer-consumer-queue.instructions.md`:
+
+- **[ERROR]** `DbContext` o servizio scoped condiviso tra task paralleli (`Parallel.ForEachAsync`, `Task.WhenAll`, `Task.Run` in un ciclo) — non è thread-safe; ogni task o worker deve aprire il proprio scope con `IServiceScopeFactory.CreateAsyncScope()`
+- **[WARNING]** Ciclo parallelo che mescola acquisizione da una sorgente (API esterna, casella di posta, file, tabella, broker) ed elaborazione per elemento — il parallelismo dell'elaborazione colpisce la sorgente; separare con produttori, coda bounded e N worker
+- **[WARNING]** Coda non bounded tra acquisizione ed elaborazione (`Channel.CreateUnbounded`, `ConcurrentQueue` senza limite) — nessuna contropressione, memoria non limitata
+- **[WARNING]** Worker senza gestione dell'errore sul singolo elemento (un elemento fallito ferma la coda), oppure `catch (Exception)` che ingoia anche gli errori fatali
+- **[INFO]** Numero di worker o capienza della coda scritti nel codice invece che letti dalla configurazione
 
 ---
 
@@ -242,4 +255,4 @@ Rispondi esattamente: "Questo non rientra nel mio perimetro operativo."
 
 ---
 
-*Skill v2.1 - Backend Audit generico .NET 10 - 2026-07-02 00:03 — claude-fable-5*
+*Skill v2.2 - Backend Audit generico .NET 10 - 2026-10-11 — claude-opus-5-5 — rilevamento di class library, EF Core e job in-process (dr-dotnet-backend#1); controlli di concorrenza produttore/consumatore (dr-dotnet-backend#2)*

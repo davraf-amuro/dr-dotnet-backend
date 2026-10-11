@@ -6,7 +6,8 @@ Pacchetto base delle linee guida dr-* per i progetti backend .NET 10: Minimal AP
 
 | File | Tipo | A cosa serve |
 |------|------|--------------|
-| `.github/instructions/dotnet-project-type.instructions.md` | Istruzione | Fa rilevare all'agente il tipo di progetto dai segnali nel codice (`Workers/*.cs`, `Endpoints/*.cs`, `package.json`) e indica quale istruzione e quale pacchetto servono; senza segnali riconoscibili l'agente si ferma e chiede. Fissa le convenzioni .NET (primary constructors, `async`/`await` con `CancellationToken`, logging con placeholder, `IValidator<T>`) e il gate di push `dotnet format <percorso>.csproj --verify-no-changes`. |
+| `.github/instructions/dotnet-project-type.instructions.md` | Istruzione | Fa rilevare all'agente il tipo di ogni progetto della solution dai segnali nel codice (`Endpoints/*.cs`, `Workers/*.cs` con `AddWindowsService`, class library referenziata, `package.json`) e indica quale istruzione e quale pacchetto servono. I job in-process di una Minimal API non sono un Windows Service; `DbContext` o EF Core rimandano a `dr-efdb`. Senza segnali riconoscibili l'agente si ferma e chiede. Fissa le convenzioni .NET (primary constructors, `async`/`await` con `CancellationToken`, logging con placeholder, `IValidator<T>`) e il gate di push `dotnet format <percorso>.csproj --verify-no-changes`. |
+| `.github/instructions/producer-consumer-queue.instructions.md` | Istruzione | Rende obbligatorio il pattern produttore/consumatore quando il codice acquisisce elementi da una sorgente e li elabora uno per uno: coda `Channel` bounded con contropressione, pochi produttori e N worker con il proprio scope DI, worker idempotenti, tre casi di errore (elemento, produttore, worker), un limitatore condiviso per le quote, parametri da configurazione. Include un esempio di riferimento, gli anti-pattern e i test minimi. |
 | `.claude/skills/dr-audit-api/SKILL.md` | Skill Claude Code | Skill `/dr-audit-api [focus]`: audit in sola lettura di un backend C# .NET 10, con una fase di orientamento e 7 fasi (sicurezza, EF Core, architettura, dead code, conformità Minimal API o Windows Service, qualità del codice, performance). Produce un report per severità `ERROR` / `WARNING` / `INFO` senza modificare file, poi chiede se attivare il plan mode per le correzioni. |
 | `Directory.Build.props` | File di radice | Impostazioni MSBuild condivise da tutti i progetti della solution: `net10.0`, `LangVersion` `14.0`, `Nullable` e `ImplicitUsings` attivi, `EnforceCodeStyleInBuild`, `AnalysisLevel` `latest`, documentazione XML generata con il warning `1591` silenziato. Configurazione Debug con simboli completi e senza ottimizzazione, Release con `pdbonly` e ottimizzazione. |
 | `global.json` | File di radice | Pinna l'SDK .NET alla versione `10.0.100` con `rollForward: latestMinor`. |
@@ -19,11 +20,11 @@ Note sui file:
 | Segnaposto in `Directory.Build.props` | `Authors`, `Company` e `Copyright` riportano `YourCompany`; `Product` vale `Minimal API Template`. Vanno personalizzati nel progetto host. |
 | Personalizzazioni e `-Update` | Senza `-Update` l'installer non tocca `Directory.Build.props` e `global.json` già presenti. Con `-Update` li sovrascrive e le personalizzazioni del progetto host si perdono. |
 | Primo push | I template `dotnet new` scrivono UTF-8 con BOM: su un progetto appena creato serve un `dotnet format` in scrittura, altrimenti il gate `--verify-no-changes` fallisce. |
-| Tipi riconosciuti | `Workers/` → Windows Service (`dr-winsvc`); `Endpoints/` → Minimal API (`dr-minimalapi`); entrambi → soluzione multi-progetto; `package.json` senza `.csproj` → frontend (`dr-fe`). Se l'istruzione del tipo rilevato manca, l'agente propone di installare il pacchetto invece di procedere a memoria. |
+| Tipi riconosciuti | Rilevati per singolo `.csproj`. `Workers/` con `AddWindowsService`/`UseWindowsService` → Windows Service (`dr-winsvc`); `Endpoints/` → Minimal API (`dr-minimalapi`), anche con job in-process (`IHostedService`, Quartz.NET) che non sono un Windows Service; un progetto per tipo nella stessa solution → soluzione multi-progetto; `.csproj` senza `Program.cs` referenziato da un altro progetto → class library, senza istruzione propria; `package.json` senza `.csproj` → frontend (`dr-fe`). In aggiunta al tipo, `DbContext` o EF Core → `dr-efdb`. Se l'istruzione del tipo rilevato manca, l'agente propone di installare il pacchetto invece di procedere a memoria. |
 
 ## 🔗 Dipendenze e domini
 
-- Dipende da: nessuna dipendenza.
+- Dipende da: nessuna dipendenza dichiarata. Il core `dr-guidelines` arriva comunque per primo se manca dal manifest: è una dipendenza implicita di ogni pacchetto.
 - Richiesto da: `dr-minimalapi` e `dr-winsvc`. Se `dr-dotnet-backend` manca dal manifest del progetto host, i loro installer lo installano in automatico prima di sé (comportamento dell'installer, non ancora provato sul campo).
 - Dominio del catalogo: `dotnet-backend` ("Backend .NET (API, servizi, worker)"), di cui è l'unico pacchetto. `appliesTo`: `dotnet`.
 - Prerequisiti del tipo `dotnet` nel catalogo: SDK .NET 10, git, PowerShell 7.
@@ -38,11 +39,13 @@ Tipologie di progetto del catalogo:
 | `classlib` — Class Library (.NET 10) | Suggerito | nessuno | nessuno |
 | `xunit-test` — Progetto di test xUnit (.NET 10) | Non citato | nessuno | nessuno |
 
-File di altri pacchetti citati dall'istruzione e dalla skill. Non vengono installati in automatico:
+File di altri pacchetti citati dalle istruzioni e dalla skill. Il core `dr-guidelines` si installa da solo se manca dal manifest; gli altri pacchetti no:
 
 | File citato | Chi lo cita | Pacchetto che lo porta |
 |-------------|-------------|------------------------|
 | `code-organization`, `sensitive-data`, `logging`, `input-validation` (`.instructions.md`) | Skill, fase 0; `input-validation` anche l'istruzione | `dr-guidelines` (core) |
+| `no-hardcoded-values.instructions.md` | `producer-consumer-queue` (configurazione di worker e coda) | `dr-guidelines` (core) |
+| `database-provider.instructions.md`, `database-startup-resilience.instructions.md` | Istruzione (tabella EF Core) e skill, fase 0 | `dr-efdb` |
 | `.github/copilot-instructions.md` | Skill, fase 0; istruzione, per il gate di push generico | Non arriva nel progetto host: l'installer del core copia solo `.github/instructions/` e `.github/prompts/`. Difetto noto dell'installer, va copiato a mano |
 | `minimal-api-architecture.instructions.md` | Istruzione e skill | `dr-minimalapi` |
 | `windows-service.instructions.md` | Istruzione e skill | `dr-winsvc` |
@@ -54,7 +57,7 @@ Se un'istruzione manca nel progetto host, la skill lo dichiara come `[istruzione
 
 Di solito non serve installarlo a mano. Per una soluzione nuova segui la guida del core [Creare una soluzione da zero](https://github.com/davraf-amuro/dr-guidelines/blob/main/docs/guida-nuova-soluzione.md): `/dr-scaffold` installa da solo i pacchetti giusti. Il flusso completo non è ancora stato provato sul campo. Anche l'installazione di `dr-minimalapi` o `dr-winsvc` porta con sé questo pacchetto, se manca (comportamento dell'installer, non ancora provato sul campo).
 
-A mano. Conviene installare prima il core `dr-guidelines`, che porta `CLAUDE.md`, configurazione e skill; l'installer però non lo impone. Prerequisiti: PowerShell 7, git, `gh auth status` autenticato (l'installer si scarica con `gh api`; i repo sono Public dal 2026-09-21). L'installer clona il repo da `github.com` con `git clone --depth 1`: con i repo Public non servono credenziali; su un repo Private anche git deve poterlo leggere (`gh auth setup-git`).
+A mano. Il core `dr-guidelines` porta `CLAUDE.md`, configurazione e skill: se manca dal manifest, l'installer lo installa per primo, con entrambe le forme qui sotto. Prerequisiti: PowerShell 7, git, `gh auth status` autenticato (l'installer si scarica con `gh api`; i repo sono Public dal 2026-09-21). L'installer clona il repo da `github.com` con `git clone --depth 1`: con i repo Public non servono credenziali; su un repo Private anche git deve poterlo leggere (`gh auth setup-git`).
 
 Lancia i comandi dalla **root del repository host**: l'installer usa la cartella corrente come destinazione e non avvisa se sbagli cartella.
 
@@ -78,6 +81,7 @@ Nota: la forma breve `irm https://raw.githubusercontent.com/... | iex` è un'alt
 | Percorso nel progetto host | Contenuto |
 |----------------------------|-----------|
 | `.github/instructions/dotnet-project-type.instructions.md` | Rilevamento del tipo di progetto, convenzioni .NET, gate di push |
+| `.github/instructions/producer-consumer-queue.instructions.md` | Pattern produttore/consumatore con coda bounded |
 | `.claude/skills/dr-audit-api/` | Cartella della skill, con `SKILL.md` |
 | `Directory.Build.props` | Impostazioni MSBuild comuni (`rootFiles` del catalogo) |
 | `global.json` | Pin dell'SDK .NET (`rootFiles` del catalogo) |
@@ -116,4 +120,4 @@ Dal progetto host usa `/dr-segnala-miglioria <descrizione>` (su Copilot il promp
 
 ---
 
-*Documento aggiornato: Ottobre 2026 — Revisione v1.1 — 2026-10-09 — claude-opus-5-5*
+*Documento aggiornato: Ottobre 2026 — Revisione v1.6 — 2026-10-11 — claude-opus-5-5*

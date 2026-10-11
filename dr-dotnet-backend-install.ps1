@@ -13,7 +13,8 @@
     Aggiornamento (sovrascrive i file gia presenti):
         & ([scriptblock]::Create((irm https://raw.githubusercontent.com/davraf-amuro/dr-dotnet-backend/main/dr-dotnet-backend-install.ps1))) -Update
 
-    Nessuna dipendenza. Installato automaticamente come dipendenza da dr-minimalapi/dr-winsvc
+    Nessuna dipendenza dichiarata. Il core dr-guidelines, se manca dal manifest,
+    si installa per primo: e' una dipendenza implicita di ogni pacchetto. Installato automaticamente come dipendenza da dr-minimalapi/dr-winsvc
     se assente dal manifest del progetto host.
 .PARAMETER Update
     Sovrascrive i file gia presenti nel progetto con la versione corrente del pacchetto.
