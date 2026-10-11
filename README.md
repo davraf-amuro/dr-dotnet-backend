@@ -20,11 +20,11 @@ Note sui file:
 | Segnaposto in `Directory.Build.props` | `Authors`, `Company` e `Copyright` riportano `YourCompany`; `Product` vale `Minimal API Template`. Vanno personalizzati nel progetto host. |
 | Personalizzazioni e `-Update` | Senza `-Update` l'installer non tocca `Directory.Build.props` e `global.json` già presenti. Con `-Update` li sovrascrive e le personalizzazioni del progetto host si perdono. |
 | Primo push | I template `dotnet new` scrivono UTF-8 con BOM: su un progetto appena creato serve un `dotnet format` in scrittura, altrimenti il gate `--verify-no-changes` fallisce. |
-| Tipi riconosciuti | `Workers/` → Windows Service (`dr-winsvc`); `Endpoints/` → Minimal API (`dr-minimalapi`); entrambi → soluzione multi-progetto; `package.json` senza `.csproj` → frontend (`dr-fe`). Se l'istruzione del tipo rilevato manca, l'agente propone di installare il pacchetto invece di procedere a memoria. |
+| Tipi riconosciuti | Rilevati per singolo `.csproj`. `Workers/` con `AddWindowsService`/`UseWindowsService` → Windows Service (`dr-winsvc`); `Endpoints/` → Minimal API (`dr-minimalapi`), anche con job in-process (`IHostedService`, Quartz.NET) che non sono un Windows Service; un progetto per tipo nella stessa solution → soluzione multi-progetto; `.csproj` senza `Program.cs` referenziato da un altro progetto → class library, senza istruzione propria; `package.json` senza `.csproj` → frontend (`dr-fe`). In aggiunta al tipo, `DbContext` o EF Core → `dr-efdb`. Se l'istruzione del tipo rilevato manca, l'agente propone di installare il pacchetto invece di procedere a memoria. |
 
 ## 🔗 Dipendenze e domini
 
-- Dipende da: nessuna dipendenza.
+- Dipende da: nessuna dipendenza dichiarata. Il core `dr-guidelines` arriva comunque per primo se manca dal manifest: è una dipendenza implicita di ogni pacchetto.
 - Richiesto da: `dr-minimalapi` e `dr-winsvc`. Se `dr-dotnet-backend` manca dal manifest del progetto host, i loro installer lo installano in automatico prima di sé (comportamento dell'installer, non ancora provato sul campo).
 - Dominio del catalogo: `dotnet-backend` ("Backend .NET (API, servizi, worker)"), di cui è l'unico pacchetto. `appliesTo`: `dotnet`.
 - Prerequisiti del tipo `dotnet` nel catalogo: SDK .NET 10, git, PowerShell 7.
@@ -44,6 +44,8 @@ File di altri pacchetti citati dall'istruzione e dalla skill. Il core `dr-guidel
 | File citato | Chi lo cita | Pacchetto che lo porta |
 |-------------|-------------|------------------------|
 | `code-organization`, `sensitive-data`, `logging`, `input-validation` (`.instructions.md`) | Skill, fase 0; `input-validation` anche l'istruzione | `dr-guidelines` (core) |
+| `no-hardcoded-values.instructions.md` | `producer-consumer-queue` (configurazione di worker e coda) | `dr-guidelines` (core) |
+| `database-provider.instructions.md`, `database-startup-resilience.instructions.md` | Istruzione (tabella EF Core) e skill, fase 0 | `dr-efdb` |
 | `.github/copilot-instructions.md` | Skill, fase 0; istruzione, per il gate di push generico | Non arriva nel progetto host: l'installer del core copia solo `.github/instructions/` e `.github/prompts/`. Difetto noto dell'installer, va copiato a mano |
 | `minimal-api-architecture.instructions.md` | Istruzione e skill | `dr-minimalapi` |
 | `windows-service.instructions.md` | Istruzione e skill | `dr-winsvc` |
@@ -118,4 +120,4 @@ Dal progetto host usa `/dr-segnala-miglioria <descrizione>` (su Copilot il promp
 
 ---
 
-*Documento aggiornato: Ottobre 2026 — Revisione v1.4 — 2026-10-11 — claude-opus-5-5*
+*Documento aggiornato: Ottobre 2026 — Revisione v1.5 — 2026-10-11 — claude-opus-5-5*
