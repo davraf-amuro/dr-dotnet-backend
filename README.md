@@ -39,7 +39,7 @@ Tipologie di progetto del catalogo:
 | `classlib` — Class Library (.NET 10) | Suggerito | nessuno | nessuno |
 | `xunit-test` — Progetto di test xUnit (.NET 10) | Non citato | nessuno | nessuno |
 
-File di altri pacchetti citati dall'istruzione e dalla skill. Il core `dr-guidelines` si installa da solo se manca dal manifest; gli altri pacchetti no:
+File di altri pacchetti citati dalle istruzioni e dalla skill. Il core `dr-guidelines` si installa da solo se manca dal manifest; gli altri pacchetti no:
 
 | File citato | Chi lo cita | Pacchetto che lo porta |
 |-------------|-------------|------------------------|
@@ -120,4 +120,4 @@ Dal progetto host usa `/dr-segnala-miglioria <descrizione>` (su Copilot il promp
 
 ---
 
-*Documento aggiornato: Ottobre 2026 — Revisione v1.5 — 2026-10-11 — claude-opus-5-5*
+*Documento aggiornato: Ottobre 2026 — Revisione v1.6 — 2026-10-11 — claude-opus-5-5*
