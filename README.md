@@ -25,7 +25,7 @@ Note sui file:
 ## 🔗 Dipendenze e domini
 
 - Dipende da: nessuna dipendenza dichiarata. Il core `dr-guidelines` arriva comunque per primo se manca dal manifest: è una dipendenza implicita di ogni pacchetto.
-- Richiesto da: `dr-minimalapi` e `dr-winsvc`. Se `dr-dotnet-backend` manca dal manifest del progetto host, i loro installer lo installano in automatico prima di sé (comportamento dell'installer, non ancora provato sul campo).
+- Richiesto da: `dr-minimalapi` e `dr-winsvc`. Se `dr-dotnet-backend` manca dal manifest del progetto host, i loro installer lo installano in automatico prima di sé.
 - Dominio del catalogo: `dotnet-backend` ("Backend .NET (API, servizi, worker)"), di cui è l'unico pacchetto. `appliesTo`: `dotnet`.
 - Prerequisiti del tipo `dotnet` nel catalogo: SDK .NET 10, git, PowerShell 7.
 - Frasi della `intentMap` che portano al dominio: "api rest", "minimal api", "endpoint", "backend", "windows service", "servizio windows", "worker", "servizio in background".
@@ -34,8 +34,8 @@ Tipologie di progetto del catalogo:
 
 | Tipologia | Ruolo di `dr-dotnet-backend` | Altri pacchetti suggeriti | Opzionali |
 |-----------|------------------------------|---------------------------|-----------|
-| `minimal-api` — Minimal API (.NET 10) | Suggerito | `dr-minimalapi` | `dr-efdb` |
-| `worker-service` — Windows Service / Worker (.NET 10) | Suggerito | `dr-winsvc` | `dr-efdb` |
+| `minimal-api` — Minimal API (.NET 10) | Suggerito | `dr-minimalapi` | `dr-efdb`, `dr-devops` |
+| `worker-service` — Windows Service / Worker (.NET 10) | Suggerito | `dr-winsvc` | `dr-efdb`, `dr-devops` |
 | `classlib` — Class Library (.NET 10) | Suggerito | nessuno | nessuno |
 | `xunit-test` — Progetto di test xUnit (.NET 10) | Non citato | nessuno | nessuno |
 
@@ -46,7 +46,7 @@ File di altri pacchetti citati dalle istruzioni e dalla skill. Il core `dr-guide
 | `code-organization`, `sensitive-data`, `logging`, `input-validation` (`.instructions.md`) | Skill, fase 0; `input-validation` anche l'istruzione | `dr-guidelines` (core) |
 | `no-hardcoded-values.instructions.md` | `producer-consumer-queue` (configurazione di worker e coda) | `dr-guidelines` (core) |
 | `database-provider.instructions.md`, `database-startup-resilience.instructions.md` | Istruzione (tabella EF Core) e skill, fase 0 | `dr-efdb` |
-| `.github/copilot-instructions.md` | Skill, fase 0; istruzione, per il gate di push generico | Non arriva nel progetto host: l'installer del core copia solo `.github/instructions/` e `.github/prompts/`. Difetto noto dell'installer, va copiato a mano |
+| `.github/copilot-instructions.md` | Skill, fase 0; istruzione, per il gate di push generico | `dr-guidelines` (core): l'installer del core lo copia in `.github/` |
 | `minimal-api-architecture.instructions.md` | Istruzione e skill | `dr-minimalapi` |
 | `windows-service.instructions.md` | Istruzione e skill | `dr-winsvc` |
 | `frontend-organization.instructions.md` | Istruzione | `dr-fe` |
@@ -55,7 +55,7 @@ Se un'istruzione manca nel progetto host, la skill lo dichiara come `[istruzione
 
 ## 🚀 Come si installa
 
-Di solito non serve installarlo a mano. Per una soluzione nuova segui la guida del core [Creare una soluzione da zero](https://github.com/davraf-amuro/dr-guidelines/blob/main/docs/guida-nuova-soluzione.md): `/dr-scaffold` installa da solo i pacchetti giusti. Il flusso completo non è ancora stato provato sul campo. Anche l'installazione di `dr-minimalapi` o `dr-winsvc` porta con sé questo pacchetto, se manca (comportamento dell'installer, non ancora provato sul campo).
+Di solito non serve installarlo a mano. Per una soluzione nuova segui la guida del core [Creare una soluzione da zero](https://github.com/davraf-amuro/dr-guidelines/blob/main/docs/guida-nuova-soluzione.md): `/dr-scaffold` installa da solo i pacchetti giusti. Il flusso completo non è ancora stato provato sul campo. Anche l'installazione di `dr-minimalapi` o `dr-winsvc` porta con sé questo pacchetto, se manca.
 
 A mano. Il core `dr-guidelines` porta `CLAUDE.md`, configurazione e skill: se manca dal manifest, l'installer lo installa per primo, con entrambe le forme qui sotto. Prerequisiti: PowerShell 7, git, `gh auth status` autenticato (l'installer si scarica con `gh api`; i repo sono Public dal 2026-09-21). L'installer clona il repo da `github.com` con `git clone --depth 1`: con i repo Public non servono credenziali; su un repo Private anche git deve poterlo leggere (`gh auth setup-git`).
 
@@ -87,9 +87,9 @@ Nota: la forma breve `irm https://raw.githubusercontent.com/... | iex` è un'alt
 | `global.json` | Pin dell'SDK .NET (`rootFiles` del catalogo) |
 | `.ai/dr-guidelines-packages.json` | Voce `dr-dotnet-backend` con data (`installedAt`) e commit installato (`commit`) |
 
-Nessuna modifica a `CLAUDE.md` né ai file di configurazione del core (`.editorconfig`, `.gitignore`, `.gitattributes`, `.claude/settings.json`, `.mcp.json`).
+Il pacchetto non modifica `CLAUDE.md` né i file di configurazione (`.editorconfig`, `.gitignore`, `.gitattributes`, `.claude/settings.json`, `.mcp.json`). Li scrive il core, solo se viene installato insieme perché mancava dal manifest.
 
-Non vengono copiati `README.md`, `LICENSE`, `.github/ISSUE_TEMPLATE/` e l'installer.
+Non vengono copiati `README.md`, `LICENSE`, `.github/ISSUE_TEMPLATE/` e l'installer `dr-dotnet-backend-install.ps1`.
 
 Senza `-Update` un file già presente resta com'è e l'installer stampa `[SKIP]`. Per la skill il controllo vale sull'intera cartella `dr-audit-api/`.
 
@@ -107,11 +107,13 @@ Solo questo pacchetto: stesso comando dell'installer del pacchetto, con `-Update
 
 Nota: `-Update` sovrascrive le copie locali. Si installa sempre l'ultimo `main` pushato su GitHub: le modifiche a questo repo non pushate su `main` non arrivano nei progetti host.
 
+Un file rimosso da questo repo resta nel progetto host: l'installer copia, non cancella.
+
 ## 🐞 Segnalare un problema o una miglioria
 
 Non correggere la copia nel progetto host: si perde al primo `-Update`.
 
-Dal progetto host usa `/dr-segnala-miglioria <descrizione>` (su Copilot il prompt `.github/prompts/dr-segnala-miglioria.prompt.md` del core). La issue si apre in questo repo, dopo la tua conferma esplicita di titolo e corpo.
+Dal progetto host usa `/dr-file-feedback <descrizione>` (su Copilot il prompt `.github/prompts/dr-file-feedback.prompt.md` del core). La issue si apre in questo repo, dopo la tua conferma esplicita di titolo e corpo.
 
 | Modello del repo | Quando usarlo |
 |------------------|---------------|
@@ -120,4 +122,4 @@ Dal progetto host usa `/dr-segnala-miglioria <descrizione>` (su Copilot il promp
 
 ---
 
-*Documento aggiornato: Ottobre 2026 — Revisione v1.6 — 2026-10-11 — claude-opus-5-5*
+*Revisione v1.7 — 2026-10-11 21:00 — claude-opus-5-5*
