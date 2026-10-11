@@ -24,11 +24,13 @@ Se l'input tra i marcatori è vuoto, esegui tutte le fasi. Se contiene un focus 
 ### Fase 0 — Orientamento (OBBLIGATORIA — non saltare mai)
 
 1. Leggi `.github/copilot-instructions.md` — carica le convenzioni ufficiali del progetto.
-2. Rileva il tipo di progetto esplorando `src/`:
-   - `Workers/*.cs` presenti → **Windows Service** → leggi `.github/instructions/windows-service.instructions.md`
-   - `Endpoints/*.cs` presenti → **Minimal API** → leggi `.github/instructions/minimal-api-architecture.instructions.md`
-   - Entrambi → **soluzione multi-progetto** → leggi entrambe le istruzioni modulari
-   - Nessuno dei due → rileva dal codice e dichiara il tipo trovato; se impossibile, fermati e chiedi all'utente
+2. Rileva il tipo **per ogni progetto** (`.csproj`) in `src/`, con la tabella di `.github/instructions/dotnet-project-type.instructions.md` (sezione "Tipo di progetto"):
+   - `Workers/*.cs` **e** `AddWindowsService`/`UseWindowsService` in `Program.cs` → **Windows Service** → leggi `.github/instructions/windows-service.instructions.md`
+   - `Endpoints/*.cs` presenti → **Minimal API** → leggi `.github/instructions/minimal-api-architecture.instructions.md`. Job in-process (`IHostedService`, `BackgroundService`, Quartz.NET) senza `AddWindowsService` restano Minimal API: non applicare le verifiche "Solo per Windows Service"
+   - Un progetto Windows Service e uno Minimal API nella stessa solution → **soluzione multi-progetto** → leggi entrambe le istruzioni modulari
+   - `.csproj` senza `Program.cs`, `Endpoints/` e `Workers/`, referenziato da un altro progetto → **class library** → nessuna istruzione di architettura propria: verificala con le regole del progetto che la referenzia e con le Fasi 1-4, 6 e 7
+   - Nessun segnale → rileva dal codice e dichiara il tipo trovato; se impossibile, fermati e chiedi all'utente
+   - In aggiunta al tipo: classe che eredita `DbContext` o pacchetto `Microsoft.EntityFrameworkCore.*` → leggi `.github/instructions/database-provider.instructions.md` e `.github/instructions/database-startup-resilience.instructions.md` (pacchetto `dr-efdb`). Se mancano, dichiaralo nel report e consiglia di installare `dr-efdb`
 3. Leggi SEMPRE (indipendentemente dal tipo):
    - `.github/instructions/code-organization.instructions.md`
    - `.github/instructions/sensitive-data.instructions.md`
