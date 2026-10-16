@@ -137,9 +137,12 @@ catch (Exception) when (!cancellationToken.IsCancellationRequested)
     // Task.WhenAll rilancia solo il primo errore: l'esito di ogni ramo si legge dal suo task
 }
 
-if (customerTask.IsFaulted) logger.LogWarning(customerTask.Exception, "Customer {CustomerId} lookup failed", customerId);
-if (ordersTask.IsFaulted) logger.LogWarning(ordersTask.Exception, "Orders of {CustomerId} lookup failed", customerId);
+// IsCompletedSuccessfully, non solo IsFaulted: il timeout di HttpClient lascia il task Canceled, non Faulted
+if (!customerTask.IsCompletedSuccessfully) logger.LogWarning(customerTask.Exception, "Customer {CustomerId} lookup failed or timed out", customerId);
+if (!ordersTask.IsCompletedSuccessfully) logger.LogWarning(ordersTask.Exception, "Orders of {CustomerId} lookup failed or timed out", customerId);
 ```
+
+`.Result` si legge solo dai task con `IsCompletedSuccessfully`: su un task fallito o annullato rilancia l'eccezione.
 
 Vale solo se le due operazioni non usano la stessa risorsa non thread-safe. Due repository sullo stesso `DbContext` iniettato **non** si eseguono così: o uno scope per ramo, o serie dichiarata.
 
@@ -179,4 +182,4 @@ Vale solo se le due operazioni non usano la stessa risorsa non thread-safe. Due 
 
 ---
 
-*Istruzione v1.0 - Fan-out parallelo - 2026-10-16 — claude-opus-5-5 (dr-dotnet-backend#4)*
+*Istruzione v1.1 - Fan-out parallelo - 2026-10-16 — claude-opus-5-5 (dr-dotnet-backend#4) — esempio `Task.WhenAll`: ramo in timeout (Canceled) registrato come errore*
