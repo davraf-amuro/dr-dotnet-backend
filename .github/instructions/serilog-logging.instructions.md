@@ -33,6 +33,8 @@ Regola generale: `logging.instructions.md`, sezione "Soggetto del log". Propriet
 - Si apre con `LogSubject.Begin` all'inizio del flusso (handler dell'endpoint, elaborazione di un elemento nel worker) e si chiude col `using`: ogni log scritto dentro, anche dai service e dai provider chiamati, porta il soggetto
 - Il valore è composto **dentro la proprietà**, non nel template del messaggio: la regola "mai interpolazione nei log" resta rispettata
 - Scope annidati: vince il soggetto più interno. Un flusso, un soggetto
+- L'errore di un elemento si logga **dentro** lo scope (`try`/`catch` dentro il `using`): un `catch` esterno o il middleware delle eccezioni scrivono `S:-` e proprio il log d'errore sfugge al filtro
+- Scope di `ILogger.BeginScope` (quello di `LogSubject`): lo gestisce il provider Serilog di `Microsoft.Extensions.Logging`. `FromLogContext()` serve per `LogContext.PushProperty`, usato da codice che scrive direttamente con l'API di Serilog
 - Nome del campo: costante o `nameof`, mai una stringa diversa da un punto all'altro del codice (`no-hardcoded-values.instructions.md`)
 
 ## Pattern richiesti (copiabili)
@@ -127,9 +129,11 @@ Le tre classi stanno in `Infrastructure/Logging/`, `internal` (`sealed` gli enri
 
 ### Uso — handler di un endpoint
 ```csharp
+private const string OrderSubjectField = "OrderId";
+
 private static async Task<IResult> GetOrderAsync(int orderId, OrderService service, ILogger<OrderService> logger, CancellationToken ct)
 {
-    using var _ = LogSubject.Begin(logger, nameof(orderId), orderId);
+    using var _ = LogSubject.Begin(logger, OrderSubjectField, orderId);
 
     logger.LogInformation("Lettura ordine richiesta");
     var order = await service.GetAsync(orderId, ct);   // i log del service portano S:orderId=42
@@ -145,8 +149,16 @@ private const string OrderSubjectField = "OrderCode";
 foreach (var order in pending)
 {
     using var _ = LogSubject.Begin(logger, OrderSubjectField, order.Code);
-    logger.LogInformation("Sincronizzazione avviata");
-    await SyncAsync(order, stoppingToken);
+    try
+    {
+        logger.LogInformation("Sincronizzazione avviata");
+        await SyncAsync(order, stoppingToken);
+    }
+    catch (Exception ex) when (ex is not OperationCanceledException)
+    {
+        // Dentro lo scope: anche il log d'errore porta S:OrderCode=<codice>
+        logger.LogError(ex, "Sincronizzazione fallita");
+    }
 }
 ```
 
@@ -160,9 +172,10 @@ Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 
 ## Errori comuni (rapidi)
 
-- `S:-` su tutti i log → `LogSubject.Begin` non chiamato, oppure `FromLogContext()` mancante
+- `S:-` su tutti i log del flusso → `LogSubject.Begin` non chiamato, oppure log scritto fuori dal `using`
 - `S:` vuoto o `{Subject}` letterale nel file → `SubjectDefaultEnricher` non registrato
-- `S:-` anche dentro lo scope → `SubjectDefaultEnricher` registrato **prima** degli altri enricher
+- `S:-` con `LogContext.PushProperty("Subject", ...)` → `FromLogContext()` mancante, oppure `SubjectDefaultEnricher` registrato **prima** di `FromLogContext()`
+- Log d'errore dell'elemento con `S:-` → `catch` fuori dallo scope del soggetto
 - Override `SERILOG__WRITETO__1__ARGS__PATH` senza effetto → sink scritti in codice invece che in `appsettings.json`, oppure `File` non all'indice `1`
 - Enricher duplicati → sezione `Enrich` presente anche in `appsettings.json`
 - `{ThreadId}` non appare → pacchetto `Serilog.Enrichers.Thread` mancante
@@ -178,8 +191,8 @@ Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 - [ ] `ReadFrom.Configuration` + enricher in codice nell'ordine `FromLogContext`, `WithThreadId`, `TaskIdEnricher`, `SubjectDefaultEnricher`
 - [ ] `TaskIdEnricher`, `SubjectDefaultEnricher` e `LogSubject` in `Infrastructure/Logging/`
 - [ ] Template Console e File con `T:{ThreadId} A:{TaskId} S:{Subject}`
-- [ ] Soggetto indicato dall'utente aperto con `LogSubject.Begin` all'ingresso di ogni flusso che lo tratta
+- [ ] Soggetto indicato dall'utente aperto con `LogSubject.Begin` all'ingresso di ogni flusso che lo tratta; errori dell'elemento loggati dentro lo scope
 - [ ] Nessun thread, task o soggetto nel testo dei messaggi; nessuna interpolazione nel template dei messaggi
 - [ ] `logs/` in `.gitignore`
 
-*Istruzione v1.0 - Serilog - 2026-10-20 — claude-opus-5-5 — contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`*
+*Istruzione v1.0 - Serilog - 2026-10-20 — claude-opus-5-5 — contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni*
