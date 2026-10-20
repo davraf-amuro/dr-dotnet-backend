@@ -35,7 +35,7 @@ Regola generale: `logging.instructions.md`, sezione "Soggetto del log". Propriet
 - Scope annidati: vince il soggetto più interno. Un flusso, un soggetto
 - L'errore di un elemento si logga **dentro** lo scope (`try`/`catch` dentro il `using`): un `catch` esterno o il middleware delle eccezioni scrivono `S:-` e proprio il log d'errore sfugge al filtro
 - Scope di `ILogger.BeginScope` (quello di `LogSubject`): lo gestisce il provider Serilog di `Microsoft.Extensions.Logging`. `FromLogContext()` serve per `LogContext.PushProperty`, usato da codice che scrive direttamente con l'API di Serilog
-- Nome del campo: costante o `nameof`, mai una stringa diversa da un punto all'altro del codice (`no-hardcoded-values.instructions.md`)
+- Nome del campo: una costante, uguale in tutto il codice (`no-hardcoded-values.instructions.md`). Niente `nameof` sul parametro: produce il nome in minuscolo (`orderId`) e il filtro distingue le maiuscole
 
 ## Pattern richiesti (copiabili)
 
@@ -136,7 +136,7 @@ private static async Task<IResult> GetOrderAsync(int orderId, OrderService servi
     using var _ = LogSubject.Begin(logger, OrderSubjectField, orderId);
 
     logger.LogInformation("Lettura ordine richiesta");
-    var order = await service.GetAsync(orderId, ct);   // i log del service portano S:orderId=42
+    var order = await service.GetAsync(orderId, ct);   // i log del service portano S:OrderId=42
     return order is null ? TypedResults.NotFound() : TypedResults.Ok(order);
 }
 ```
@@ -179,7 +179,7 @@ Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 - Override `SERILOG__WRITETO__1__ARGS__PATH` senza effetto → sink scritti in codice invece che in `appsettings.json`, oppure `File` non all'indice `1`
 - Enricher duplicati → sezione `Enrich` presente anche in `appsettings.json`
 - `{ThreadId}` non appare → pacchetto `Serilog.Enrichers.Thread` mancante
-- `{TaskId}` sempre `-` → normale nel codice sincrono fuori da un `Task`
+- `{TaskId}` spesso `-` → normale: `Task.CurrentId` è `null` nel codice sincrono e anche nelle continuazioni dei metodi `async` (es. handler ASP.NET Core dopo un `await`)
 - Template con `{Properties}` → stampa tutte le proprietà, verboso: da evitare in produzione
 - `UseSerilog` su `HostApplicationBuilder` → non compila: usa `builder.Services.AddSerilog`
 
@@ -195,4 +195,4 @@ Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 - [ ] Nessun thread, task o soggetto nel testo dei messaggi; nessuna interpolazione nel template dei messaggi
 - [ ] `logs/` in `.gitignore`
 
-*Istruzione v1.0 - Serilog - 2026-10-20 — claude-opus-5-5 — contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni*
+*Istruzione v1.0 - Serilog - 2026-10-20 — claude-opus-5-5 — contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni, nome del campo solo costante*
