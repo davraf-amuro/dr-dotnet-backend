@@ -20,7 +20,7 @@
     <Authors>YourCompany</Authors>
     <Company>YourCompany</Company>
     <Copyright>© YourCompany. All rights reserved.</Copyright>
-    <Product>Minimal API Template</Product>
+    <Product>YourProduct</Product>
 
     <!-- Versioning -->
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>

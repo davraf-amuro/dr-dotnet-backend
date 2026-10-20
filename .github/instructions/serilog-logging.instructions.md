@@ -170,6 +170,8 @@ docker service logs <stack>_<servizio> 2>&1 | Select-String "S:OrderCode=ORD-004
 
 Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 
+**Con il driver GELF** (`logging.driver: gelf` nello stack Swarm) `docker service logs` non mostra nulla: i log vanno solo al collector. Il driver spedisce la riga del sink `Console` come testo del messaggio, quindi `Subject` non è un campo strutturato: sul collector il filtro è una ricerca di testo `S:OrderCode=ORD-0042 ` nel messaggio. Controlla `.ai/dr-guidelines-packages.json`: se elenca `dr-devops`, la fonte unica sul driver è `docker-swarm-compose.instructions.md`, sezione "5. Sezione `logging` (GELF)" — seguila e dichiaralo nell'output. Se non lo elenca, ripiego: filtra sul collector con la stessa ricerca di testo e dichiara che applichi il ripiego.
+
 ## Errori comuni (rapidi)
 
 - `S:-` su tutti i log del flusso → `LogSubject.Begin` non chiamato, oppure log scritto fuori dal `using`
@@ -195,4 +197,4 @@ Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 - [ ] Nessun thread, task o soggetto nel testo dei messaggi; nessuna interpolazione nel template dei messaggi
 - [ ] `logs/` in `.gitignore`
 
-*Istruzione v1.0 - Serilog - 2026-10-20 — claude-opus-5-5 — contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni, nome del campo solo costante*
+*Istruzione v1.1 - Serilog - 2026-10-20 — claude-opus-5-5 — filtro del soggetto con driver GELF (docker service logs non basta), rimando condizionale a `dr-devops`. v1.0: contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni, nome del campo solo costante*
