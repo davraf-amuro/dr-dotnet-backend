@@ -20,7 +20,7 @@ Note sui file:
 |------|------|
 | Pin dell'SDK | Se l'SDK .NET installato non soddisfa `global.json` (`10.0.100`, `rollForward: latestMinor`), ogni comando `dotnet` lanciato nella cartella fallisce. L'errore sembra un problema di `dotnet new`, ma la causa è il pin. |
 | Segnaposto in `Directory.Build.props` | `Authors`, `Company` e `Copyright` riportano `YourCompany`; `Product` vale `YourProduct` (nome neutro: il file serve Minimal API, Worker e class library). Vanno personalizzati nel progetto host. |
-| Personalizzazioni e `-Update` | Senza `-Update` l'installer non tocca `Directory.Build.props` e `global.json` già presenti. Con `-Update` li sovrascrive e le personalizzazioni del progetto host si perdono. |
+| Personalizzazioni e `-Update` | Senza `-Update` l'installer non tocca `Directory.Build.props` e `global.json` già presenti (`[SKIP]`). Con `-Update` li sovrascrive solo se non li hai mai modificati; altrimenti la versione nuova va in `<file>.new` e l'originale resta com'è. |
 | Primo push | I template `dotnet new` scrivono UTF-8 con BOM: su un progetto appena creato serve un `dotnet format` in scrittura, altrimenti il gate `--verify-no-changes` fallisce. |
 | Tipi riconosciuti | Rilevati per singolo `.csproj`. `Workers/` con `AddWindowsService`/`UseWindowsService` → Windows Service (`dr-winsvc`); `Endpoints/` → Minimal API (`dr-minimalapi`), anche con job in-process (`IHostedService`, Quartz.NET) che non sono un Windows Service; un progetto per tipo nella stessa solution → soluzione multi-progetto; `.csproj` senza `Program.cs` referenziato da un altro progetto → class library, senza istruzione propria; `package.json` senza `.csproj` → frontend (`dr-fe`). In aggiunta al tipo, `DbContext` o EF Core → `dr-efdb`. Se l'istruzione del tipo rilevato manca, l'agente propone di installare il pacchetto invece di procedere a memoria. |
 
@@ -30,7 +30,9 @@ Note sui file:
 - Richiesto da: `dr-minimalapi` e `dr-winsvc`. Se `dr-dotnet-backend` manca dal manifest del progetto host, i loro installer lo installano in automatico prima di sé.
 - Dominio del catalogo: `dotnet-backend` ("Backend .NET (API, servizi, worker)"), di cui è l'unico pacchetto. `appliesTo`: `dotnet`.
 - Prerequisiti del tipo `dotnet` nel catalogo: SDK .NET 10, git, PowerShell 7.
-- Frasi della `intentMap` che portano al dominio: "api rest", "minimal api", "endpoint", "backend", "windows service", "servizio windows", "worker", "servizio in background".
+- Frasi della `intentMap` che portano al dominio: "api rest", "minimal api", "endpoint", "backend", "windows service", "servizio windows", "worker", "servizio in background", "database", "entity framework", "ef core", "sql server", "sql", "migrazioni", "dbcontext".
+
+Pacchetti suggeriti (`suggests` del catalogo): `dr-winsvc`, `dr-minimalapi`, `dr-efdb`, `dr-fe`. L'installer non li installa e non chiede nulla: a fine installazione stampa una riga `[sugg]` con il motivo per ognuno che manca dal manifest.
 
 Tipologie di progetto del catalogo:
 
@@ -60,7 +62,7 @@ Se un'istruzione manca nel progetto host, la skill lo dichiara come `[istruzione
 
 Di solito non serve installarlo a mano. Per una soluzione nuova segui la guida del core [Creare una soluzione da zero](https://github.com/davraf-amuro/dr-guidelines/blob/main/docs/guida-nuova-soluzione.md): `/dr-scaffold` installa da solo i pacchetti giusti. Il flusso completo non è ancora stato provato sul campo. Anche l'installazione di `dr-minimalapi` o `dr-winsvc` porta con sé questo pacchetto, se manca.
 
-A mano. Il core `dr-guidelines` porta `CLAUDE.md`, configurazione e skill: se manca dal manifest, l'installer lo installa per primo, con entrambe le forme qui sotto. Prerequisiti: PowerShell 7, git, `gh auth status` autenticato (l'installer si scarica con `gh api`; i repo sono Public dal 2026-09-21). L'installer clona il repo da `github.com` con `git clone --depth 1`: con i repo Public non servono credenziali; su un repo Private anche git deve poterlo leggere (`gh auth setup-git`).
+A mano. Il core `dr-guidelines` porta `CLAUDE.md`, configurazione e skill: se manca dal manifest, l'installer lo installa per primo, con entrambe le forme qui sotto. Prerequisiti: PowerShell 7 e git (l'installer clona il repo con `git clone --depth 1`). `gh` autenticato (`gh auth status`) serve solo alle forme `gh api` qui sotto: i repo sono Public dal 2026-09-21. Su un repo Private anche git deve poterlo leggere (`gh auth setup-git`).
 
 Lancia i comandi dalla **root del repository host**: l'installer usa la cartella corrente come destinazione e non avvisa se sbagli cartella.
 
@@ -86,12 +88,13 @@ Nota: la forma breve `irm https://raw.githubusercontent.com/... | iex` è un'alt
 | `.github/instructions/dotnet-project-type.instructions.md` | Rilevamento del tipo di progetto, convenzioni .NET, gate di push |
 | `.github/instructions/producer-consumer-queue.instructions.md` | Pattern produttore/consumatore con coda bounded |
 | `.github/instructions/fan-out-parallelism.instructions.md` | Fan-out parallelo su operazioni indipendenti |
+| `.github/instructions/serilog-logging.instructions.md` | Configurazione Serilog e soggetto del log (`Subject`) |
 | `.claude/skills/dr-audit-api/` | Cartella della skill, con `SKILL.md` |
 | `Directory.Build.props` | Impostazioni MSBuild comuni (`rootFiles` del catalogo) |
 | `global.json` | Pin dell'SDK .NET (`rootFiles` del catalogo) |
 | `.ai/dr-guidelines-packages.json` | Voce `dr-dotnet-backend` con data (`installedAt`) e commit installato (`commit`) |
 
-Il pacchetto non modifica `CLAUDE.md` né i file di configurazione (`.editorconfig`, `.gitignore`, `.gitattributes`, `.claude/settings.json`, `.mcp.json`). Li scrive il core, solo se viene installato insieme perché mancava dal manifest.
+Il pacchetto non modifica `CLAUDE.md` né i file di configurazione (`.editorconfig`, `.gitignore`, `.gitattributes`, `.claude/settings.json`, `.mcp.json`). Li scrive il core, solo se viene installato insieme perché mancava dal manifest; `.mcp.json` solo con `-WithMcp` dell'installer del core.
 
 Non vengono copiati `README.md`, `LICENSE`, `.github/ISSUE_TEMPLATE/` e l'installer `dr-dotnet-backend-install.ps1`.
 
@@ -126,4 +129,4 @@ Dal progetto host usa `/dr-file-feedback <descrizione>` (su Copilot il prompt `.
 
 ---
 
-*Revisione v1.9 — 2026-10-20 18:20 — claude-opus-5-5*
+*Revisione v2.0 — 2026-10-20 21:00 — claude-opus-5-5*

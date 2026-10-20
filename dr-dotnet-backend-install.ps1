@@ -10,15 +10,20 @@
     Installazione (repo Private, con gh autenticato):
         & ([scriptblock]::Create((gh api repos/davraf-amuro/dr-dotnet-backend/contents/dr-dotnet-backend-install.ps1 -H "Accept: application/vnd.github.raw" | Out-String)))
 
-    Aggiornamento (sovrascrive i file gia presenti):
+    Aggiornamento (riscrive istruzioni e skill; file di configurazione personalizzati -> '<file>.new'):
         & ([scriptblock]::Create((irm https://raw.githubusercontent.com/davraf-amuro/dr-dotnet-backend/main/dr-dotnet-backend-install.ps1))) -Update
 
     Nessuna dipendenza dichiarata, a parte il core dr-guidelines: dipendenza implicita
     di ogni pacchetto, se manca dal manifest arriva per primo. dr-dotnet-backend e' a sua volta
     dipendenza di dr-minimalapi e dr-winsvc: se assente dal manifest del progetto host,
     viene installato automaticamente prima di loro.
+
+    Il wrapper espone solo -Update; -NoDependencies e -SourceRoot si usano con
+    dr-guidelines-install.ps1 -Package <nome>.
 .PARAMETER Update
-    Sovrascrive i file gia presenti nel progetto con la versione corrente del pacchetto.
+    Sovrascrive istruzioni, prompt e skill gia' presenti con la versione corrente del pacchetto.
+    I file di configurazione e i sorgenti che l'host puo' aver personalizzato non si
+    sovrascrivono: la versione nuova va in '<file>.new'. Non si propaga alle dipendenze.
 #>
 
 [CmdletBinding()]
