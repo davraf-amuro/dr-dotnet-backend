@@ -35,6 +35,7 @@ Se l'input tra i marcatori è vuoto, esegui tutte le fasi. Se contiene un focus 
    - `.github/instructions/code-organization.instructions.md`
    - `.github/instructions/sensitive-data.instructions.md`
    - `.github/instructions/logging.instructions.md`
+   - `.github/instructions/serilog-logging.instructions.md` (stesso pacchetto della skill: configurazione Serilog e soggetto del log)
    - `.github/instructions/input-validation.instructions.md`
    - `.github/instructions/producer-consumer-queue.instructions.md` (stesso pacchetto della skill, per la sezione "Concorrenza" della Fase 3)
 4. Esplora la struttura del progetto (cartelle `src/`, `Program.cs`, file `.csproj`).
@@ -52,6 +53,8 @@ Cerca nei file `.cs`, `appsettings*.json`, `docker-compose*.yml`, `.env*`:
 - **[ERROR]** `.mcp.json` committato (il file committato è `.mcp.example.json`; `.mcp.json` deve stare in `.gitignore`)
 - **[ERROR]** Logging di dati sensibili: variabili che contengono password/token/PII passate come argomento strutturato a `_logger.Log*`
 - **[WARNING]** String interpolation nel logging (`$"..."` come argomento di `_logger.Log*`) — viola logging strutturato con placeholder
+- **[WARNING]** Soggetto del log concatenato nel messaggio (es. `"Ordine {OrderId} ..."` ripetuto in ogni log del flusso) invece che aperto una volta con `LogSubject.Begin` — i log del soggetto non si isolano con il filtro `S:<Campo>=<valore>`
+- **[WARNING]** Sink, livelli o template Serilog scritti in codice invece che nella sezione `Serilog` di `appsettings.json` — gli override per ambiente (container) non hanno effetto
 - **[WARNING]** Endpoint con body (POST/PUT/PATCH) senza `IValidator<T>` — input non validato, superficie di attacco aperta
 - **[WARNING]** Endpoint GET con filtro query senza `IValidator<T>` associato
 - **[INFO]** Connection string in `appsettings.json` con valori che sembrano reali invece di placeholder
@@ -255,4 +258,4 @@ Rispondi esattamente: "Questo non rientra nel mio perimetro operativo."
 
 ---
 
-*Skill v2.2 - Backend Audit generico .NET 10 - 2026-10-11 — claude-opus-5-5 — rilevamento di class library, EF Core e job in-process (dr-dotnet-backend#1); controlli di concorrenza produttore/consumatore (dr-dotnet-backend#2)*
+*Skill v2.3 - Backend Audit generico .NET 10 - 2026-10-20 — claude-opus-5-5 — lettura di `serilog-logging.instructions.md`; controlli su soggetto del log e configurazione Serilog da `appsettings.json`. v2.2: rilevamento di class library, EF Core e job in-process (dr-dotnet-backend#1); controlli di concorrenza produttore/consumatore (dr-dotnet-backend#2)*
