@@ -160,7 +160,7 @@ Verifica rispetto a `code-organization.instructions.md` Regola 6:
 - **[WARNING]** Classe nella cartella sbagliata rispetto al suo ruolo
 - **[WARNING]** Classe con responsabilità multiple chiaramente distinte (SRP violato)
 - **[INFO]** Naming non conforme: namespace snake_case, classi PascalCase, variabili camelCase
-- **[INFO]** Primary constructor non usato dove applicabile (C# 14)
+- **[INFO]** Primary constructor non usato dove applicabile (C# 12+)
 
 ---
 
