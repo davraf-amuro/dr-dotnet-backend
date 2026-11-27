@@ -15,6 +15,7 @@ Scopo: configurazione obbligatoria di Serilog nei progetti .NET 11 (Minimal API,
 | `Serilog.Sinks.Console` | sempre |
 | `Serilog.Sinks.File` | sempre |
 | `Serilog.Enrichers.Thread` | sempre (enricher `ThreadId`) |
+| `Serilog.Sinks.Graylog` | solo con l'opzione (b) di "Log verso Graylog (GELF)" |
 
 ## Regole core (sempre)
 
@@ -172,6 +173,56 @@ Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 
 **Con il driver GELF** (`logging.driver: gelf` nello stack Swarm) `docker service logs` non mostra nulla: i log vanno solo al collector. Il driver spedisce la riga del sink `Console` come testo del messaggio, quindi `Subject` non è un campo strutturato: sul collector il filtro è una ricerca di testo `S:OrderCode=ORD-0042 ` nel messaggio. Controlla `.ai/dr-guidelines-packages.json`: se elenca `dr-devops`, la fonte unica sul driver è `docker-swarm-compose.instructions.md`, sezione "5. Sezione `logging` (GELF)" — seguila e dichiaralo nell'output. Se non lo elenca, ripiego: filtra sul collector con la stessa ricerca di testo e dichiara che applichi il ripiego.
 
+## Log verso Graylog (GELF) — chiedi prima di scegliere
+
+**Quando.** Il task riguarda il deploy in container (Dockerfile, Docker Compose, stack Swarm) o la sezione `logging` dello stack, e il progetto manda o vuole mandare i log a Graylog.
+
+**Prima di chiedere** cerca la scelta già fatta in `.github/instructions/project-logging.instructions.md` del progetto: se c'è, seguila e dichiaralo nell'output. Se manca, chiedi all'utente (in Claude Code con una domanda a scelta) fra:
+
+| Opzione | Cosa arriva al collector | Limiti |
+|---|---|---|
+| **(a) solo driver `gelf` di Docker** (sezione `logging` dello stack) | La riga del sink `Console` come testo del messaggio | `Subject`, `ThreadId`, `TaskId` sono testo, non campi: filtro per ricerca di testo. Livello GELF uguale per info ed errori: Docker assegna livello 6 a stdout e 3 a stderr, e il sink `Console` di Serilog scrive tutto su stdout. `docker service logs` e Portainer vuoti |
+| **(b) sink Serilog Graylog** (`Serilog.Sinks.Graylog`), al posto del driver | Ogni evento con le sue proprietà come campi (`Subject`, `ThreadId`, `TaskId`: il sink li spedisce come `_Subject` ecc., Graylog toglie il `_` quando li salva) e il livello reale | Un pacchetto NuGet in più e una variabile d'ambiente per l'indirizzo. Lo stack torna al driver di default `json-file`: i log si rivedono anche in `docker service logs` e Portainer |
+
+Driver `gelf` **e** sink insieme → ogni log arriva due volte al collector: sconsiglialo e, se l'utente lo vuole, dichiaralo.
+
+**Registra la scelta** in `.github/instructions/project-logging.instructions.md` (file del progetto: nessun pacchetto `dr-*` lo distribuisce, l'installer non lo tocca), con una riga e la data, es.:
+
+```markdown
+---
+applyTo: "**"
+---
+# Logging del progetto
+- Graylog: opzione (b) sink Serilog, scelta dall'utente il 2026-11-27. Driver `gelf` non usato.
+```
+
+**Opzione (b) — configurazione.** Pacchetto `Serilog.Sinks.Graylog` (repository `serilog-contrib/serilog-sinks-graylog`). Il sink si configura da file come gli altri (regola 1), all'indice `2` dopo `Console` (0) e `File` (1), che restano con i loro override. Va **solo nel file dell'ambiente che spedisce al collector** (es. `appsettings.Production.json`), con le chiavi per indice: un file di ambiente si sovrappone ad `appsettings.json` indice per indice, quindi non può togliere un sink scritto nel file base, e un array con un solo elemento sostituirebbe `Console` all'indice 0.
+
+```json
+{
+  "Serilog": {
+    "Using": { "2": "Serilog.Sinks.Graylog" },
+    "WriteTo": {
+      "2": {
+        "Name": "Graylog",
+        "Args": {
+          "hostnameOrAddress": "CHISSADOVE",
+          "port": 12201,
+          "transportType": "Udp"
+        }
+      }
+    }
+  }
+}
+```
+
+- `hostnameOrAddress`, `port` e `transportType` sono parametri obbligatori del metodo `Graylog(...)` usato dalla configurazione da file: scrivili tutti. `transportType`: `Udp`, `Tcp` o `Http`; con `Http` scrivi l'indirizzo come URL (`http://<host>`, come nel README del sink; per `https` lo schema è obbligatorio). Altre chiavi in `Args` = altri parametri di `Graylog(...)` nella versione installata (es. `facility`, `minimumLogEventLevel`): controllali lì, non inventarli.
+- L'indirizzo del collector è un dato sensibile: mai nel repo (nel file resta il segnaposto `CHISSADOVE` di `sensitive-data.instructions.md`). Si imposta per ambiente con `SERILOG__WRITETO__2__ARGS__HOSTNAMEORADDRESS` (e `SERILOG__WRITETO__2__ARGS__PORT` se serve). In uno stack Swarm la variabile va dichiarata nel blocco `environment:` del compose senza default (`- SERILOG__WRITETO__2__ARGS__HOSTNAMEORADDRESS=${SERILOG__WRITETO__2__ARGS__HOSTNAMEORADDRESS}`) **e** valorizzata in Portainer: solo in Portainer non arriva al container.
+- La variabile `SERILOG__WRITETO__2__...` va **solo** nello stack il cui ambiente (`ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT`) carica il file con il sink all'indice `2`: in un ambiente senza quell'elemento l'avvio fallisce (`InvalidOperationException: The configuration value in Serilog:WriteTo:2:Name has no 'Name' element`), anche con la variabile vuota.
+- Indirizzo vuoto, sbagliato o non risolvibile: l'app parte lo stesso e i log verso Graylog si perdono in silenzio (l'errore finisce solo nel SelfLog di Serilog). Dopo il deploy controlla sul collector che arrivino, e dichiaralo.
+- Sul collector il filtro per soggetto diventa un campo: `Subject:"OrderCode=ORD-0042"` (senza `_`) invece della ricerca di testo.
+- Nello stack non serve la sezione `logging` con driver `gelf`. Controlla `.ai/dr-guidelines-packages.json`: se elenca `dr-devops`, le regole dello stack sono in `docker-swarm-compose.instructions.md`, §2-§3 (variabili) e §5 (logging): seguile e dichiaralo. Se non lo elenca, ripiego: dichiara la variabile nel file di deploy usato dal progetto, senza valore reale, e dichiara che applichi il ripiego.
+
 ## Errori comuni (rapidi)
 
 - `S:-` su tutti i log del flusso → `LogSubject.Begin` non chiamato, oppure log scritto fuori dal `using`
@@ -196,5 +247,6 @@ Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 - [ ] Soggetto indicato dall'utente aperto con `LogSubject.Begin` all'ingresso di ogni flusso che lo tratta; errori dell'elemento loggati dentro lo scope
 - [ ] Nessun thread, task o soggetto nel testo dei messaggi; nessuna interpolazione nel template dei messaggi
 - [ ] `logs/` in `.gitignore`
+- [ ] Deploy in container con Graylog: scelta (a)/(b) letta da `project-logging.instructions.md` o chiesta e registrata lì; con (b) sink all'indice `2`, indirizzo solo da variabile d'ambiente, nessun driver `gelf` nello stack
 
-*Istruzione v1.2 - Serilog - 2026-11-27 — claude-sonnet-5-5 — versione .NET 10 → .NET 11 (davraf-amuro/dr-dotnet-backend#7). v1.1: filtro del soggetto con driver GELF (docker service logs non basta), rimando condizionale a `dr-devops`. v1.0: contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni, nome del campo solo costante*
+*Istruzione v1.3 - Serilog - 2026-11-27 — claude-opus-5-5 — sezione "Log verso Graylog (GELF)": domanda (a) driver / (b) sink `Serilog.Sinks.Graylog`, scelta registrata in `project-logging.instructions.md`, configurazione del sink all'indice 2 (davraf-amuro/dr-guidelines#36). v1.2: versione .NET 10 → .NET 11 (davraf-amuro/dr-dotnet-backend#7). v1.1: filtro del soggetto con driver GELF (docker service logs non basta), rimando condizionale a `dr-devops`. v1.0: contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni, nome del campo solo costante*
