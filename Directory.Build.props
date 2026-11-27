@@ -11,7 +11,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <!-- Code Quality: queste tre voci alzano il livello del lint (dotnet format con verify-no-changes) su codice esistente -->
+    <!-- Code Quality: a alzare il livello del lint (dotnet format con verify-no-changes) su codice esistente sono EnforceCodeStyleInBuild, AnalysisLevel e GenerateDocumentationFile; TreatWarningsAsErrors resta false -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest</AnalysisLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>

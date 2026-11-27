@@ -30,7 +30,7 @@ Note sui file:
 - Dipende da: nessuna dipendenza dichiarata. Il core `dr-guidelines` arriva comunque per primo se manca dal manifest: è una dipendenza implicita di ogni pacchetto.
 - Richiesto da: `dr-minimalapi` e `dr-winsvc`. Se `dr-dotnet-backend` manca dal manifest del progetto host, i loro installer lo installano in automatico prima di sé.
 - Dominio del catalogo: `dotnet-backend` ("Backend .NET (API, servizi, worker)"), di cui è l'unico pacchetto. `appliesTo`: `dotnet`.
-- Prerequisiti del tipo `dotnet` nel catalogo: SDK .NET 11, git, PowerShell 7.
+- Prerequisiti del tipo `dotnet` nel catalogo: SDK .NET 11 o successivo, git, PowerShell 7.
 - Frasi della `intentMap` che portano al dominio: "api rest", "minimal api", "endpoint", "backend", "windows service", "servizio windows", "worker", "servizio in background", "database", "entity framework", "ef core", "sql server", "sql", "migrazioni", "dbcontext".
 
 Pacchetti suggeriti (`suggests` del catalogo): `dr-winsvc`, `dr-minimalapi`, `dr-efdb`, `dr-fe`. L'installer non li installa e non chiede nulla: a fine installazione stampa una riga `[sugg]` con il motivo per ognuno che manca dal manifest.
@@ -39,10 +39,10 @@ Tipologie di progetto del catalogo:
 
 | Tipologia | Ruolo di `dr-dotnet-backend` | Altri pacchetti suggeriti | Opzionali |
 |-----------|------------------------------|---------------------------|-----------|
-| `minimal-api` — Minimal API (.NET 11) | Suggerito | `dr-minimalapi` | `dr-efdb`, `dr-devops` |
-| `worker-service` — Windows Service / Worker (.NET 11) | Suggerito | `dr-winsvc` | `dr-efdb`, `dr-devops` |
-| `classlib` — Class Library (.NET 11) | Suggerito | nessuno | nessuno |
-| `xunit-test` — Progetto di test xUnit (.NET 11) | Non citato | nessuno | nessuno |
+| `minimal-api` — Minimal API (.NET) | Suggerito | `dr-minimalapi` | `dr-efdb`, `dr-devops` |
+| `worker-service` — Windows Service / Worker (.NET) | Suggerito | `dr-winsvc` | `dr-efdb`, `dr-devops` |
+| `classlib` — Class Library (.NET) | Suggerito | nessuno | nessuno |
+| `xunit-test` — Progetto di test xUnit (.NET) | Non citato | nessuno | nessuno |
 
 File di altri pacchetti citati dalle istruzioni e dalla skill. Il core `dr-guidelines` si installa da solo se manca dal manifest; gli altri pacchetti no:
 
@@ -130,4 +130,4 @@ Dal progetto host usa `/dr-file-feedback <descrizione>` (su Copilot il prompt `.
 
 ---
 
-*Revisione v2.1 — 2026-11-27 12:00 — claude-sonnet-5-5*
+*Revisione v2.2 — 2026-11-27 18:00 — claude-sonnet-5-5*

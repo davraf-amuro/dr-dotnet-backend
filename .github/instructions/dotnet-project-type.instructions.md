@@ -72,7 +72,7 @@ Per adottarli:
 2. rinomina il file (`Directory.Build.props.new` → `Directory.Build.props`, `global.json.new` → `global.json`);
 3. esegui il lint dalla radice del repo, per esempio `dotnet format src/Ordini.Api/Ordini.Api.csproj --verify-no-changes`, e correggi le violazioni prima del commit.
 
-Nel **nuovo scaffolding** (progetto creato da zero con `/dr-scaffold` o `/dr-scaffold-project`) le skill del core adottano i due file da sole: un progetto appena creato non ha codice da proteggere.
+Nel **nuovo scaffolding** (progetti nati nella stessa esecuzione di `/dr-scaffold-solution`, anche quando ci si arriva da `/dr-scaffold`) la skill adotta i due file da sola: un progetto appena creato non ha codice da proteggere. `/dr-scaffold-project` non installa pacchetti e quindi non adotta i `.new`.
 
 ---
 
@@ -113,4 +113,4 @@ Questo comando è il "comando di verifica dichiarato dall'istruzione di dominio"
 
 ---
 
-*Istruzione v1.2 - Progetto .NET - 2026-11-27 — claude-sonnet-5-5 — .NET 11 e `global.json` `latestMajor`; `Directory.Build.props`/`global.json` come `.new` su progetti esistenti (dr-dotnet-backend#7); Gate di Push con esempi e citazione dell'esito (dr-dotnet-backend#9). v1.1: class library, EF Core → dr-efdb, job in-process distinti dal Windows Service (dr-dotnet-backend#1); rimando a producer-consumer-queue (dr-dotnet-backend#2)*
+*Istruzione v1.3 - Progetto .NET - 2026-11-27 — claude-sonnet-5-5 — adozione dei `.new` attribuita a `/dr-scaffold-solution`, non a `/dr-scaffold-project` (davraf-amuro/dr-guidelines#37). v1.2: .NET 11 e `global.json` `latestMajor`; `Directory.Build.props`/`global.json` come `.new` su progetti esistenti (dr-dotnet-backend#7); Gate di Push con esempi e citazione dell'esito (dr-dotnet-backend#9). v1.1: class library, EF Core → dr-efdb, job in-process distinti dal Windows Service (dr-dotnet-backend#1); rimando a producer-consumer-queue (dr-dotnet-backend#2)*
