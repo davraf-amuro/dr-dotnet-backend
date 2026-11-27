@@ -4,7 +4,7 @@ applyTo: "**"
 
 # Serilog — configurazione e soggetto del log (AI Agent)
 
-Scopo: configurazione obbligatoria di Serilog nei progetti .NET 10 (Minimal API, Windows Service, worker). Versione .NET di `logging.instructions.md` (core): le regole generali (placeholder, soggetto del log) stanno lì, qui c'è come si realizzano con Serilog. Fonte unica: Minimal API e Windows Service rimandano a questo file.
+Scopo: configurazione obbligatoria di Serilog nei progetti .NET 11 (Minimal API, Windows Service, worker). Versione .NET di `logging.instructions.md` (core): le regole generali (placeholder, soggetto del log) stanno lì, qui c'è come si realizzano con Serilog. Fonte unica: Minimal API e Windows Service rimandano a questo file.
 
 ## Dipendenze NuGet
 
@@ -197,4 +197,4 @@ Lo spazio finale nel filtro evita che `OrderId=4` trovi anche `OrderId=42`.
 - [ ] Nessun thread, task o soggetto nel testo dei messaggi; nessuna interpolazione nel template dei messaggi
 - [ ] `logs/` in `.gitignore`
 
-*Istruzione v1.1 - Serilog - 2026-10-20 — claude-opus-5-5 — filtro del soggetto con driver GELF (docker service logs non basta), rimando condizionale a `dr-devops`. v1.0: contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni, nome del campo solo costante*
+*Istruzione v1.2 - Serilog - 2026-11-27 — claude-sonnet-5-5 — versione .NET 10 → .NET 11 (davraf-amuro/dr-dotnet-backend#7). v1.1: filtro del soggetto con driver GELF (docker service logs non basta), rimando condizionale a `dr-devops`. v1.0: contenuto Serilog spostato dal core `logging.instructions.md`; configurazione da `appsettings.json` (container-ready) ed enricher in codice; soggetto del log `Subject`; errori loggati dentro lo scope, cause corrette negli errori comuni, nome del campo solo costante*

@@ -6,21 +6,22 @@
 
   <PropertyGroup>
     <!-- .NET Settings -->
-    <TargetFramework>net10.0</TargetFramework>
-    <LangVersion>14.0</LangVersion>
+    <TargetFramework>net11.0</TargetFramework>
+    <!-- LangVersion non impostata: il default del compilatore segue il TFM (C# 15 su net11.0) -->
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <!-- Code Quality -->
+    <!-- Code Quality: queste tre voci alzano il livello del lint (dotnet format con verify-no-changes) su codice esistente -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest</AnalysisLevel>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
-    <!-- Assembly Info -->
-    <Authors>YourCompany</Authors>
-    <Company>YourCompany</Company>
-    <Copyright>© YourCompany. All rights reserved.</Copyright>
-    <Product>YourProduct</Product>
+    <!-- Assembly Info: nessun valore di default. Se servono, impostali nel progetto host, ad esempio:
+         <Authors>Nome Azienda</Authors>
+         <Company>Nome Azienda</Company>
+         <Copyright>© Nome Azienda. All rights reserved.</Copyright>
+         <Product>Nome Prodotto</Product>
+    -->
 
     <!-- Versioning -->
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
