@@ -1,9 +1,9 @@
 ---
 name: dr-audit-api
-description: "Audit completo di qualsiasi backend C# .NET 10 (Minimal API, Windows Service, o soluzione multi-progetto). Rileva tipo progetto, carica istruzioni pertinenti, verifica conformità a pattern, sicurezza, architettura, EF Core, performance e qualità del codice. Non propone fix: produce un report strutturato per severità da usare come base per un plan."
+description: "Audit completo di qualsiasi backend C# .NET 11 (Minimal API, Windows Service, o soluzione multi-progetto). Rileva tipo progetto, carica istruzioni pertinenti, verifica conformità a pattern, sicurezza, architettura, EF Core, performance e qualità del codice. Non propone fix: produce un report strutturato per severità da usare come base per un plan."
 ---
 
-Sei un **senior .NET architect** incaricato di eseguire un audit completo del backend di questo progetto C# .NET 10.
+Sei un **senior .NET architect** incaricato di eseguire un audit completo del backend di questo progetto C# .NET 11.
 
 ## Argomento aggiuntivo (focus opzionale)
 
@@ -258,4 +258,4 @@ Rispondi esattamente: "Questo non rientra nel mio perimetro operativo."
 
 ---
 
-*Skill v2.3 - Backend Audit generico .NET 10 - 2026-10-20 — claude-opus-5-5 — lettura di `serilog-logging.instructions.md`; controlli su soggetto del log e configurazione Serilog da `appsettings.json`. v2.2: rilevamento di class library, EF Core e job in-process (dr-dotnet-backend#1); controlli di concorrenza produttore/consumatore (dr-dotnet-backend#2)*
+*Skill v2.4 - Backend Audit generico .NET 11 - 2026-11-27 — claude-sonnet-5-5 — versione .NET 10 → .NET 11 (davraf-amuro/dr-dotnet-backend#7). v2.3: lettura di `serilog-logging.instructions.md`; controlli su soggetto del log e configurazione Serilog da `appsettings.json`. v2.2: rilevamento di class library, EF Core e job in-process (dr-dotnet-backend#1); controlli di concorrenza produttore/consumatore (dr-dotnet-backend#2)*

@@ -1,6 +1,6 @@
 # dr-dotnet-backend
 
-Pacchetto base delle linee guida dr-* per i progetti backend .NET 10: Minimal API, Windows Service, worker e class library.
+Pacchetto base delle linee guida dr-* per i progetti backend .NET 11: Minimal API, Windows Service, worker e class library.
 
 ## 🧩 Cosa contiene
 
@@ -10,16 +10,17 @@ Pacchetto base delle linee guida dr-* per i progetti backend .NET 10: Minimal AP
 | `.github/instructions/producer-consumer-queue.instructions.md` | Istruzione | Rende obbligatorio il pattern produttore/consumatore quando il codice acquisisce elementi da una sorgente e li elabora uno per uno: coda `Channel` bounded con contropressione, pochi produttori e N worker con il proprio scope DI, worker idempotenti, tre casi di errore (elemento, produttore, worker), un limitatore condiviso per le quote, parametri da configurazione. Include un esempio di riferimento, gli anti-pattern e i test minimi. |
 | `.github/instructions/fan-out-parallelism.instructions.md` | Istruzione | Versione .NET dello Schema A di `concurrency.instructions.md` (core): fan-out su operazioni indipendenti con `Parallel.ForEachAsync` per le collezioni e `Task.WhenAll` solo per poche operazioni diverse note a priori. `MaxDegreeOfParallelism` da configurazione e validato, `CancellationToken` del delegate in ogni ramo, errore catturato per ramo (con il timeout di `HttpClient` distinto dall'annullamento), uno scope DI per ramo, esito completo/parziale/fallito deciso dal chiamante. Per sorgente + elaborazione rimanda a `producer-consumer-queue`. Include esempi, anti-pattern e test minimi. |
 | `.github/instructions/serilog-logging.instructions.md` | Istruzione | Versione .NET di `logging.instructions.md` (core) e fonte unica della configurazione Serilog per Minimal API e Windows Service: livelli, sink e template in `appsettings.json` (sovrascrivibili con variabili d'ambiente, pronti per i container), enricher in codice (`FromLogContext`, `ThreadId`, `TaskId`, `Subject`). Il soggetto del log indicato dall'utente si apre con `LogSubject.Begin` all'ingresso del flusso e compare come `S:<Campo>=<valore>` in ogni riga, così i log di un'entità si isolano con un filtro. |
-| `.claude/skills/dr-audit-api/SKILL.md` | Skill Claude Code | Skill `/dr-audit-api [focus]`: audit in sola lettura di un backend C# .NET 10, con una fase di orientamento e 7 fasi (sicurezza, EF Core, architettura, dead code, conformità Minimal API o Windows Service, qualità del codice, performance). Produce un report per severità `ERROR` / `WARNING` / `INFO` senza modificare file, poi chiede se attivare il plan mode per le correzioni. |
-| `Directory.Build.props` | File di radice | Impostazioni MSBuild condivise da tutti i progetti della solution: `net10.0`, `LangVersion` `14.0`, `Nullable` e `ImplicitUsings` attivi, `EnforceCodeStyleInBuild`, `AnalysisLevel` `latest`, documentazione XML generata con il warning `1591` silenziato. Configurazione Debug con simboli completi e senza ottimizzazione, Release con `pdbonly` e ottimizzazione. |
-| `global.json` | File di radice | Pinna l'SDK .NET alla versione `10.0.100` con `rollForward: latestMinor`. |
+| `.claude/skills/dr-audit-api/SKILL.md` | Skill Claude Code | Skill `/dr-audit-api [focus]`: audit in sola lettura di un backend C# .NET 11, con una fase di orientamento e 7 fasi (sicurezza, EF Core, architettura, dead code, conformità Minimal API o Windows Service, qualità del codice, performance). Produce un report per severità `ERROR` / `WARNING` / `INFO` senza modificare file, poi chiede se attivare il plan mode per le correzioni. |
+| `Directory.Build.props` | File di radice | Impostazioni MSBuild condivise da tutti i progetti della solution: `net11.0`, `Nullable` e `ImplicitUsings` attivi, `EnforceCodeStyleInBuild`, `AnalysisLevel` `latest`, `LangVersion` non impostata (il default segue il TFM: C# 15 su `net11.0`), documentazione XML generata con il warning `1591` silenziato. Configurazione Debug con simboli completi e senza ottimizzazione, Release con `pdbonly` e ottimizzazione. |
+| `global.json` | File di radice | Imposta l'SDK .NET minimo `11.0.100` con `rollForward: latestMajor`: un SDK più nuovo non blocca il progetto. |
 
 Note sui file:
 
 | Tema | Nota |
 |------|------|
-| Pin dell'SDK | Se l'SDK .NET installato non soddisfa `global.json` (`10.0.100`, `rollForward: latestMinor`), ogni comando `dotnet` lanciato nella cartella fallisce. L'errore sembra un problema di `dotnet new`, ma la causa è il pin. |
-| Segnaposto in `Directory.Build.props` | `Authors`, `Company` e `Copyright` riportano `YourCompany`; `Product` vale `YourProduct` (nome neutro: il file serve Minimal API, Worker e class library). Vanno personalizzati nel progetto host. |
+| Pin dell'SDK | Se l'SDK .NET installato non soddisfa `global.json` (minimo `11.0.100`; con `latestMajor` bastano SDK 11 o più nuovi), ogni comando `dotnet` lanciato nella cartella fallisce. L'errore sembra un problema di `dotnet new`, ma la causa è il pin. |
+| Assembly info | `Authors`, `Company`, `Copyright` e `Product` non hanno valori di default: il file riporta in un commento come impostarli nel progetto host. |
+| Effetto su build e lint | `Directory.Build.props` e `global.json` cambiano la build e il risultato del lint: `EnforceCodeStyleInBuild`, `AnalysisLevel` `latest` e `GenerateDocumentationFile` alzano il livello di analisi su codice esistente e possono far fallire `dotnet format --verify-no-changes`. Su un progetto .NET già esistente (`*.csproj`, `*.sln` o `*.slnx` presenti) i due file arrivano come `Directory.Build.props.new` e `global.json.new` con un avviso, mai imposti: confronta, rinomina, poi esegui il lint. Nel nuovo scaffolding le skill del core li adottano da sole. |
 | Personalizzazioni e `-Update` | Senza `-Update` l'installer non tocca `Directory.Build.props` e `global.json` già presenti (`[SKIP]`). Con `-Update` li sovrascrive solo se non li hai mai modificati; altrimenti la versione nuova va in `<file>.new` e l'originale resta com'è. |
 | Primo push | I template `dotnet new` scrivono UTF-8 con BOM: su un progetto appena creato serve un `dotnet format` in scrittura, altrimenti il gate `--verify-no-changes` fallisce. |
 | Tipi riconosciuti | Rilevati per singolo `.csproj`. `Workers/` con `AddWindowsService`/`UseWindowsService` → Windows Service (`dr-winsvc`); `Endpoints/` → Minimal API (`dr-minimalapi`), anche con job in-process (`IHostedService`, Quartz.NET) che non sono un Windows Service; un progetto per tipo nella stessa solution → soluzione multi-progetto; `.csproj` senza `Program.cs` referenziato da un altro progetto → class library, senza istruzione propria; `package.json` senza `.csproj` → frontend (`dr-fe`). In aggiunta al tipo, `DbContext` o EF Core → `dr-efdb`. Se l'istruzione del tipo rilevato manca, l'agente propone di installare il pacchetto invece di procedere a memoria. |
@@ -29,7 +30,7 @@ Note sui file:
 - Dipende da: nessuna dipendenza dichiarata. Il core `dr-guidelines` arriva comunque per primo se manca dal manifest: è una dipendenza implicita di ogni pacchetto.
 - Richiesto da: `dr-minimalapi` e `dr-winsvc`. Se `dr-dotnet-backend` manca dal manifest del progetto host, i loro installer lo installano in automatico prima di sé.
 - Dominio del catalogo: `dotnet-backend` ("Backend .NET (API, servizi, worker)"), di cui è l'unico pacchetto. `appliesTo`: `dotnet`.
-- Prerequisiti del tipo `dotnet` nel catalogo: SDK .NET 10, git, PowerShell 7.
+- Prerequisiti del tipo `dotnet` nel catalogo: SDK .NET 11, git, PowerShell 7.
 - Frasi della `intentMap` che portano al dominio: "api rest", "minimal api", "endpoint", "backend", "windows service", "servizio windows", "worker", "servizio in background", "database", "entity framework", "ef core", "sql server", "sql", "migrazioni", "dbcontext".
 
 Pacchetti suggeriti (`suggests` del catalogo): `dr-winsvc`, `dr-minimalapi`, `dr-efdb`, `dr-fe`. L'installer non li installa e non chiede nulla: a fine installazione stampa una riga `[sugg]` con il motivo per ognuno che manca dal manifest.
@@ -38,10 +39,10 @@ Tipologie di progetto del catalogo:
 
 | Tipologia | Ruolo di `dr-dotnet-backend` | Altri pacchetti suggeriti | Opzionali |
 |-----------|------------------------------|---------------------------|-----------|
-| `minimal-api` — Minimal API (.NET 10) | Suggerito | `dr-minimalapi` | `dr-efdb`, `dr-devops` |
-| `worker-service` — Windows Service / Worker (.NET 10) | Suggerito | `dr-winsvc` | `dr-efdb`, `dr-devops` |
-| `classlib` — Class Library (.NET 10) | Suggerito | nessuno | nessuno |
-| `xunit-test` — Progetto di test xUnit (.NET 10) | Non citato | nessuno | nessuno |
+| `minimal-api` — Minimal API (.NET 11) | Suggerito | `dr-minimalapi` | `dr-efdb`, `dr-devops` |
+| `worker-service` — Windows Service / Worker (.NET 11) | Suggerito | `dr-winsvc` | `dr-efdb`, `dr-devops` |
+| `classlib` — Class Library (.NET 11) | Suggerito | nessuno | nessuno |
+| `xunit-test` — Progetto di test xUnit (.NET 11) | Non citato | nessuno | nessuno |
 
 File di altri pacchetti citati dalle istruzioni e dalla skill. Il core `dr-guidelines` si installa da solo se manca dal manifest; gli altri pacchetti no:
 
@@ -129,4 +130,4 @@ Dal progetto host usa `/dr-file-feedback <descrizione>` (su Copilot il prompt `.
 
 ---
 
-*Revisione v2.0 — 2026-10-20 21:00 — claude-opus-5-5*
+*Revisione v2.1 — 2026-11-27 12:00 — claude-sonnet-5-5*
